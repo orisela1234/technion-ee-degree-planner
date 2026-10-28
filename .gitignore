@@ -1,0 +1,8 @@
+node_modules
+node_modules.nosync
+dist
+site
+data_cache.nosync
+tsconfig.tsbuildinfo
+*.pdf
+.DS_Store
