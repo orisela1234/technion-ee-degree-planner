@@ -5,6 +5,7 @@ import { useUi } from '../lib/ui'
 import { TRACK } from '../data/track'
 import type { AppState } from '../lib/types'
 import { SheetView } from './SheetView'
+import { safariAtRisk } from '../lib/persist'
 
 /** מסך הפתיחה של גרסת השיתוף: מעלים תעודת ציונים, והמערכת נבנית לפיה */
 export function Welcome() {
@@ -33,6 +34,12 @@ export function Welcome() {
           <li><Route size={16} aria-hidden /><span><b>מותאם למסלול הנדסת חשמל</b> (004004-1-000) לפי קטלוג תשפ"ו – כולל קבוצות ההתמחות, מעבדות, מל"ג וספורט.</span></li>
           <li><DatabaseBackup size={16} aria-hidden /><span><b>הכול נשמר אוטומטית</b> בדפדפן הזה. לעבור למחשב אחר – "ייצוא גיבוי" בהגדרות, ואז "ייבוא" כאן.</span></li>
         </ul>
+        {safariAtRisk() && (
+          <p className="wl-safari">
+            <b>בספארי או באייפון?</b> שם נתוני אתרים נמחקים אם לא נכנסים אליהם 7 ימים. כדי לשמור על התכנון: הוסיפו את האתר למסך הבית
+            (שיתוף ← "הוספה למסך הבית") ובנו את התכנון משם, ושמרו מדי פעם גיבוי – המערכת תזכיר.
+          </p>
+        )}
       </section>
 
       <SheetView onboarding />

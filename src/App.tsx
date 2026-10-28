@@ -5,6 +5,8 @@ import { SheetView } from './components/SheetView'
 import { ChainCard } from './components/ChainCard'
 import { AuditView } from './components/AuditView'
 import { Welcome } from './components/Welcome'
+import { BackupGuard, persistState } from './components/BackupGuard'
+import { backupStatus, safariAtRisk } from './lib/persist'
 import { GradesView } from './components/GradesView'
 import { DragLayer } from './components/DragLayer'
 import { HoverCard } from './components/HoverCard'
@@ -141,6 +143,11 @@ function TopBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
                 </select>
               </label>
               <hr />
+              <div className="storage-info small">
+                <div>אחסון בדפדפן: {persistState === true ? 'קבוע ✓ (לא יימחק כשהדיסק מתמלא)' : persistState === false ? 'רגיל – כדאי לגבות' : 'רגיל'}</div>
+                <div>גיבוי אחרון: {backupStatus().lastBackup ? new Date(backupStatus().lastBackup).toLocaleDateString('he-IL') : 'עוד לא'}</div>
+                {safariAtRisk() && <div className="warn-text">בספארי ובאייפון נתוני אתרים נמחקים אחרי 7 ימים בלי כניסה – כדאי לגבות או להוסיף למסך הבית</div>}
+              </div>
               <button className="menu-item" onClick={() => exportState(state)}>⬇︎ ייצוא גיבוי (JSON)</button>
               <button className="menu-item" onClick={() => fileRef.current?.click()}>⬆︎ ייבוא גיבוי</button>
               <button className="menu-item danger" onClick={() => {
@@ -239,6 +246,7 @@ function Shell() {
   return (
     <div className="app">
       <TopBar tab={tab} setTab={setTab} />
+      <BackupGuard />
       {tab === 'plan' && (
         <div className={`plan-layout ${poolOpen ? '' : 'pool-closed'}`} style={{ '--pool-w': `${poolW}px` } as React.CSSProperties}>
           {poolOpen && <CoursePool />}

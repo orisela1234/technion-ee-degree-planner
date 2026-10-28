@@ -3,6 +3,7 @@ import { COURSES, currentSemCode, nextSemCode, categoryOfCourse, isSportCourse, 
 import { MANDATORY, MANDATORY_IDS, MANDATORY_SLOTS, isLabCourse, type SlotType } from '../data/track'
 import { evalPrereq, idsBefore, idsIn } from './prereq'
 import { BUILTIN_SHEET, type GradeSheet, type SheetRecord } from '../data/student'
+import { markBackup } from './persist'
 import { fmtDate, lastSheetSem, reserveCategories, setActiveSheet, sheetId, sheetOf } from './sheet'
 import type { AppState, ColorBy, Credit, PlanItem, Result } from './types'
 import { isFailed } from './types'
@@ -433,4 +434,5 @@ export function exportState(state: AppState) {
   a.download = `תכנון-תואר-${new Date().toISOString().slice(0, 10)}.json`
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+  markBackup()
 }
