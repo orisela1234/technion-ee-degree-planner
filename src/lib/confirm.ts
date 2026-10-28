@@ -8,6 +8,8 @@ export interface ConfirmRequest {
   confirmLabel: string
   cancelLabel?: string
   tone?: 'danger' | 'normal'
+  /** פעולה בטוחה שקודמת לאישור (למשל הורדת גיבוי) – כפתור ראשי שמריץ אותה ואז מאשר */
+  alt?: { label: string; run: () => void }
   resolve: (ok: boolean) => void
 }
 

@@ -1444,3 +1444,11 @@ html[data-fchain="13"] .chart .card[data-chain="13"] { opacity: 1; filter: none;
 .storage-info { display: flex; flex-direction: column; gap: 2px; color: var(--ink-2); padding: 2px 8px 6px; }
 .storage-info .warn-text { color: var(--warn); }
 .wl-safari { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--ink); font-size: 13px; line-height: 1.6; }
+
+/* ---------- החלפת משתמש ---------- */
+.sheet-mode { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.sheet-other { display: flex; align-items: flex-start; gap: 7px; padding: 8px 12px; border-radius: 10px; background: var(--accent-soft); color: var(--ink); font-size: 13px; line-height: 1.55; }
+.sheet-other > svg { color: var(--accent); flex: none; margin-top: 2px; }
+.sheet-other.warn { background: var(--warn-soft); }
+.sheet-other.warn > svg { color: var(--warn); }
+.btn.ghost.danger-text { color: var(--bad); }

@@ -6,7 +6,8 @@ import { ChainCard } from './components/ChainCard'
 import { AuditView } from './components/AuditView'
 import { Welcome } from './components/Welcome'
 import { BackupGuard, persistState } from './components/BackupGuard'
-import { backupStatus, safariAtRisk } from './lib/persist'
+import { backupStatus, resetBackupMarks, safariAtRisk } from './lib/persist'
+import { confirmNewUser } from './lib/switchUser'
 import { GradesView } from './components/GradesView'
 import { DragLayer } from './components/DragLayer'
 import { HoverCard } from './components/HoverCard'
@@ -153,6 +154,13 @@ function TopBar({ tab, setTab }: { tab: Tab; setTab: (t: Tab) => void }) {
               <button className="menu-item danger" onClick={() => {
                 if (confirm('לאפס את התכנון לפי גיליון הציונים? כל השינויים שלא גובו יימחקו.')) dispatch({ type: 'reset' })
               }}>↺ איפוס לפי גיליון הציונים</button>
+              <button className="menu-item danger" onClick={async () => {
+                setMenu(false)
+                if (!(await confirmNewUser(state))) return
+                resetBackupMarks()
+                dispatch({ type: 'newUser' })
+                ui.toast('התכנון נמחק – אפשר להעלות את תעודת הציונים של המשתמש החדש', 'info', [], { label: 'בטל', run: () => dispatch({ type: 'undo' }) })
+              }}>⇄ החלפת משתמש – התחלה מחדש</button>
               <hr />
               <div className="muted small">נתוני קורסים: CheeseFork + technion-histograms, עודכן {DATA_META.builtAt}</div>
             </div>

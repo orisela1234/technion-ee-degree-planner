@@ -15,6 +15,11 @@ const emit = () => window.dispatchEvent(new Event('degree:backup'))
 export const markBackup = () => { set(K_BACKUP, Date.now()); emit() }
 export const markChange = () => { if (!get(K_FIRST)) set(K_FIRST, Date.now()); set(K_CHANGE, Date.now()) }
 export const snoozeBackup = (days = 1) => { set(K_SNOOZE, Date.now() + days * DAY); emit() }
+/** משתמש חדש – מעקב הגיבויים מתחיל מאפס */
+export const resetBackupMarks = () => {
+  for (const k of [K_BACKUP, K_CHANGE, K_FIRST, K_SNOOZE]) { try { localStorage.removeItem(k) } catch { /* אין אחסון */ } }
+  emit()
+}
 
 export const isSafari = () => /^((?!chrome|chromium|android|crios|fxios|edg|opr).)*safari/i.test(navigator.userAgent)
 export const isStandalone = () =>

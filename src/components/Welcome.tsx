@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { DatabaseBackup, GraduationCap, Lock, Route, Zap } from 'lucide-react'
+import { DatabaseBackup, GraduationCap, Lock, Route, Undo2, Zap } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { TRACK } from '../data/track'
@@ -9,7 +9,7 @@ import { safariAtRisk } from '../lib/persist'
 
 /** מסך הפתיחה של גרסת השיתוף: מעלים תעודת ציונים, והמערכת נבנית לפיה */
 export function Welcome() {
-  const { dispatch } = useStore()
+  const { dispatch, canUndo } = useStore()
   const ui = useUi()
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -44,6 +44,12 @@ export function Welcome() {
 
       <SheetView onboarding />
 
+      {canUndo && (
+        <section className="wl-foot">
+          <span className="muted small">התחלת מחדש בטעות?</span>
+          <button className="btn ghost" onClick={() => dispatch({ type: 'undo' })}><Undo2 size={15} aria-hidden /> חזרה לתכנון הקודם</button>
+        </section>
+      )}
       <section className="wl-foot">
         <span className="muted small">יש לך כבר גיבוי מהמערכת?</span>
         <button className="btn ghost" onClick={() => fileRef.current?.click()}><DatabaseBackup size={15} aria-hidden /> ייבוא גיבוי (JSON)</button>

@@ -231,6 +231,7 @@ export type Action =
   | { type: 'setDensity'; density: 'comfortable' | 'compact' }
   | { type: 'setColorBy'; colorBy: ColorBy }
   | { type: 'applySheet'; sheet: GradeSheet }
+  | { type: 'newUser'; sheet?: GradeSheet }
   | { type: 'assignChain'; courseId: string; groupId: number | null }
   | { type: 'remove'; key: string }
   | { type: 'setResult'; key: string; result?: Result }
@@ -370,9 +371,13 @@ function apply(s: AppState, a: Action): AppState {
       else chainAssign[a.courseId] = a.groupId
       return { ...s, chainAssign }
     }
+    case 'newUser':
+      // משתמש אחר: תכנון חדש לגמרי מהגיליון, בלי שום דבר מהתכנון הקודם (בלי גיליון – חזרה למסך הפתיחה)
+      return a.sheet ? withReserveRule({ ...buildInitialState(a.sheet), sheet: a.sheet }) : buildInitialState()
     case 'applySheet': {
       const prev = sheetOf(s)
       const history = [prev, ...(s.sheetHistory ?? [])]
+        .filter((x) => x.records.length > 0) // בלי "גיליון" ריק של מסך הפתיחה
         .filter((x, i, arr) => sheetId(x) !== sheetId(a.sheet) && arr.findIndex((y) => sheetId(y) === sheetId(x)) === i)
         .slice(0, 6)
       return { ...migrateToSheet(s, a.sheet, a.sheet !== BUILTIN_SHEET), sheetHistory: history }

@@ -1,5 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, FileText, History, Loader2, ShieldCheck, Upload, X } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AlertTriangle, CheckCircle2, FileText, History, Loader2, RefreshCw, ShieldCheck, Upload, UserPlus, X } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { askConfirm } from '../lib/confirm'
@@ -11,6 +11,10 @@ import type { ParsedSheet } from '../lib/sheetParse'
 import type { GradeSheet, SheetRecord } from '../data/student'
 import type { AppState } from '../lib/types'
 import { ReserveCreditsPanel } from './ReserveCredits'
+import { clearNewUserRequest, confirmNewUser, isOtherStudent, newUserRequested } from '../lib/switchUser'
+import { resetBackupMarks } from '../lib/persist'
+
+type Mode = 'update' | 'fresh'
 
 const recKey = (r: SheetRecord) => `${r.id}|${r.sem}`
 
@@ -67,8 +71,19 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
   const [error, setError] = useState<string | null>(null)
   const [parsed, setParsed] = useState<ParsedSheet | null>(null)
   const [over, setOver] = useState(false)
+  // עדכון התכנון הקיים, או משתמש אחר – תכנון חדש מאפס
+  const [mode, setMode] = useState<Mode>(() => (newUserRequested() ? 'fresh' : 'update'))
+  const zoneRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    clearNewUserRequest()
+    const on = () => { clearNewUserRequest(); setMode('fresh'); setParsed(null); zoneRef.current?.scrollIntoView({ block: 'center' }) }
+    window.addEventListener('degree:newuser', on)
+    return () => window.removeEventListener('degree:newuser', on)
+  }, [])
 
   const cur = useMemo(() => sumsByCategory(current, state), [current, state])
+  const history = (state.sheetHistory ?? []).filter((h) => h.records.length > 0)
 
   const readFile = async (file?: File) => {
     if (!file) return
@@ -83,13 +98,26 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
       const { readSheetPdf } = await import('../lib/sheetPdf')
       const res = await readSheetPdf(file)
       if (!res.sheet.records.length) setError(res.warnings[0] ?? 'לא הצלחתי לקרוא קורסים מהקובץ.')
-      else setParsed(res)
+      else {
+        setParsed(res)
+        if (!onboarding && isOtherStudent(current, res.sheet)) setMode('fresh')
+      }
     } catch {
       setError('לא הצלחתי לקרוא את הקובץ. ודאו שזה ה-PDF המקורי של תעודת הציונים (לא צילום מסך).')
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ''
     }
+  }
+
+  const startFresh = async (sheet: GradeSheet) => {
+    if (!(await confirmNewUser(state, sheet))) return
+    resetBackupMarks()
+    dispatch({ type: 'newUser', sheet })
+    setParsed(null)
+    setMode('update')
+    ui.toast(`נבנה תכנון חדש לפי הגיליון של ${sheet.student || 'המשתמש החדש'}`, 'ok',
+      ['התכנון הקודם נמחק – אפשר לבטל מיד, או לטעון את הגיבוי שלו'], { label: 'בטל', run: () => dispatch({ type: 'undo' }) })
   }
 
   const apply = async (sheet: GradeSheet, check?: ParsedSheet) => {
@@ -108,11 +136,28 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
   return (
     <div className="sheet-view">
       {/* ---------- העלאה ---------- */}
-      <section className="panel">
+      <section className="panel" ref={zoneRef}>
         <div className="panel-head">
-          <h3><Upload size={16} aria-hidden /> {onboarding ? 'העלאת תעודת הציונים שלך' : 'העלאת גיליון ציונים מעודכן'}</h3>
+          <h3><Upload size={16} aria-hidden /> {onboarding ? 'העלאת תעודת הציונים שלך' : mode === 'fresh' ? 'העלאת תעודת ציונים של משתמש אחר' : 'העלאת גיליון ציונים מעודכן'}</h3>
           <span className="muted small"><ShieldCheck size={13} aria-hidden /> הקובץ נקרא רק במחשב שלך ולא נשלח לשום מקום. מספר תעודת הזהות לא נשמר.</span>
         </div>
+        {!onboarding && (
+          <div className="sheet-mode">
+            <div className="seg" role="radiogroup" aria-label="מה לעשות עם הגיליון">
+              <button role="radio" aria-checked={mode === 'update'} className={mode === 'update' ? 'on' : ''} onClick={() => setMode('update')}>
+                <RefreshCw size={14} aria-hidden /> עדכון התכנון שלי
+              </button>
+              <button role="radio" aria-checked={mode === 'fresh'} className={mode === 'fresh' ? 'on' : ''} onClick={() => setMode('fresh')}>
+                <UserPlus size={14} aria-hidden /> משתמש אחר – תכנון חדש
+              </button>
+            </div>
+            <span className="muted small">
+              {mode === 'update'
+                ? 'הציונים והקורסים שבוצעו יילקחו מהגיליון, והתכנון שלך נשמר.'
+                : 'התכנון הנוכחי יימחק (אחרי הצעה לגבות אותו), וייבנה תכנון חדש מאפס לפי הגיליון שתעלו.'}
+            </span>
+          </div>
+        )}
         <button
           type="button"
           className={`dropzone ${over ? 'over' : ''} ${busy ? 'busy' : ''}`}
@@ -131,7 +176,13 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
       </section>
 
       {/* ---------- תצוגה מקדימה לפני עדכון ---------- */}
-      {parsed && <SheetPreview parsed={parsed} current={current} onboarding={onboarding} onApply={() => apply(parsed.sheet, parsed)} onCancel={() => setParsed(null)} />}
+      {parsed && (
+        <SheetPreview
+          parsed={parsed} current={current} onboarding={onboarding} mode={mode}
+          onApply={() => (!onboarding && mode === 'fresh' ? startFresh(parsed.sheet) : apply(parsed.sheet, parsed))}
+          onCancel={() => setParsed(null)}
+        />
+      )}
 
       {!onboarding && <>
 
@@ -168,11 +219,11 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
       <ReserveCreditsPanel />
 
       {/* ---------- גיליונות קודמים ---------- */}
-      {!!state.sheetHistory?.length && (
+      {history.length > 0 && (
         <section className="panel">
           <div className="panel-head"><h3><History size={16} aria-hidden /> גיליונות קודמים</h3></div>
           <ul className="sheet-history">
-            {state.sheetHistory.map((h) => (
+            {history.map((h) => (
               <li key={sheetId(h)}>
                 <span><b>{fmtDate(h.issued)}</b> · {fmtPts(h.accumulated)} נק"ז · ממוצע {h.gpa.toFixed(1)} · {h.records.length} שורות{h.file ? <> · <bdi>{h.file}</bdi></> : ''}</span>
                 <button
@@ -191,8 +242,11 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
   )
 }
 
-function SheetPreview({ parsed, current, onApply, onCancel, onboarding }: { parsed: ParsedSheet; current: GradeSheet; onApply: () => void; onCancel: () => void; onboarding?: boolean }) {
+function SheetPreview({ parsed, current, onApply, onCancel, onboarding, mode }: { parsed: ParsedSheet; current: GradeSheet; onApply: () => void; onCancel: () => void; onboarding?: boolean; mode: Mode }) {
   const next = parsed.sheet
+  // תכנון חדש (מסך הפתיחה או משתמש אחר) – אין טעם להשוות לגיליון הקודם
+  const fresh = onboarding || mode === 'fresh'
+  const other = !onboarding && isOtherStudent(current, next)
   const d = useMemo(() => diffSheets(current, next), [current, next])
   const sums = useMemo(() => sumsByCategory(next), [next])
   const pointsOk = Math.abs(parsed.computedPoints - next.accumulated) < 0.05
@@ -205,8 +259,8 @@ function SheetPreview({ parsed, current, onApply, onCancel, onboarding }: { pars
         <button className="icon-btn" aria-label="ביטול" onClick={onCancel}><X size={16} /></button>
       </div>
       <div className="gh-kpis sheet-kpis">
-        <div className="gk primary"><span>נק"ז שנצברו</span><b>{fmtPts(next.accumulated)}</b><small>{onboarding ? `מתוך ${fmtPts(next.required)}` : `${delta(current.accumulated, next.accumulated)} מהגיליון הנוכחי`}</small></div>
-        <div className="gk"><span>ממוצע</span><b>{next.gpa.toFixed(1)}</b><small>{onboarding ? 'לפי הגיליון' : delta(current.gpa, next.gpa)}</small></div>
+        <div className="gk primary"><span>נק"ז שנצברו</span><b>{fmtPts(next.accumulated)}</b><small>{fresh ? `מתוך ${fmtPts(next.required)}` : `${delta(current.accumulated, next.accumulated)} מהגיליון הנוכחי`}</small></div>
+        <div className="gk"><span>ממוצע</span><b>{next.gpa.toFixed(1)}</b><small>{fresh ? 'לפי הגיליון' : delta(current.gpa, next.gpa)}</small></div>
         <div className="gk"><span>שורות בגיליון</span><b>{next.records.length}</b><small>עד {semLabel(lastSheetSem(next))}</small></div>
       </div>
       <div className={`sheet-check ${pointsOk ? 'ok' : 'bad'}`}>
@@ -216,10 +270,19 @@ function SheetPreview({ parsed, current, onApply, onCancel, onboarding }: { pars
       </div>
       {parsed.warnings.map((w) => <div key={w} className="sheet-error"><AlertTriangle size={15} aria-hidden /> {w}</div>)}
 
-      {onboarding && !/הנדסת חשמל/.test(next.program) && (
+      {other && (
+        <div className={`sheet-other ${mode === 'fresh' ? '' : 'warn'}`}>
+          <UserPlus size={15} aria-hidden />
+          <span>
+            הגיליון הזה של <b>{next.student}</b>, והתכנון הנוכחי של <b>{current.student}</b>.{' '}
+            {mode === 'fresh' ? 'לכן הוא ייטען כתכנון חדש למשתמש אחר.' : 'במצב "עדכון" התכנון הנוכחי יעודכן לפי גיליון של סטודנט אחר – כנראה עדיף "משתמש אחר".'}
+          </span>
+        </div>
+      )}
+      {fresh && !/הנדסת חשמל/.test(next.program) && (
         <div className="sheet-error"><AlertTriangle size={15} aria-hidden /> התכנית בגיליון: "{next.program || 'לא זוהתה'}". המערכת בנויה למסלול הנדסת חשמל (004004-1-000) – בתכנית אחרת הדרישות עשויות להיות שונות.</div>
       )}
-      {onboarding ? null : same ? <p className="muted">זהה לגיליון הנוכחי – אין מה לעדכן.</p> : (
+      {fresh ? null : same ? <p className="muted">זהה לגיליון הנוכחי – אין מה לעדכן.</p> : (
         <div className="sheet-diff">
           {d.added.length > 0 && (
             <div><h4 className="ok">נוספו לגיליון ({d.added.length})</h4>
@@ -245,12 +308,18 @@ function SheetPreview({ parsed, current, onApply, onCancel, onboarding }: { pars
         <summary>כל השורות שנקראו מהקובץ</summary>
         <SheetTable sheet={next} counted={sums.counted} />
       </details>
-      {!onboarding && <p className="muted small">
+      {!onboarding && mode === 'fresh' && <p className="muted small">
+        מה יקרה: התכנון הנוכחי נמחק, ונבנה תכנון חדש לפי הגיליון הזה – קורסי החובה שנשארו משובצים לפי הקטלוג, והשרשראות נבחרות מחדש.
+        לפני כן תוצע הורדת גיבוי, ואפשר גם לבטל מיד.
+      </p>}
+      {!onboarding && mode === 'update' && <p className="muted small">
         מה יקרה: הקורסים שבוצעו והציונים יילקחו מהגיליון. קורסי החובה והבחירה שתכננת, המשבצות, השרשראות, ההערות ועובר בינארי – נשמרים.
         אפשר לבטל מיד, או לחזור לגיליון הקודם מהרשימה למטה.
       </p>}
       <div className="sheet-actions">
-        <button className="btn" onClick={onApply} disabled={!onboarding && same}>{onboarding ? 'בנה את התכנון שלי' : 'עדכן את התכנון לפי הגיליון הזה'}</button>
+        <button className="btn" onClick={onApply} disabled={!fresh && same}>
+          {onboarding ? 'בנה את התכנון שלי' : mode === 'fresh' ? 'התחל תכנון חדש לפי הגיליון הזה' : 'עדכן את התכנון לפי הגיליון הזה'}
+        </button>
         <button className="btn ghost" onClick={onCancel}>ביטול</button>
       </div>
     </section>

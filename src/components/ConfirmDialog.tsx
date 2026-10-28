@@ -27,7 +27,12 @@ export function ConfirmDialog() {
         {req.note && <p className="cf-note">{req.note}</p>}
         <div className="cf-actions">
           <button className="btn ghost" onClick={() => answerConfirm(false)}>{req.cancelLabel ?? 'ביטול'}</button>
-          <button ref={okRef} className={`btn ${req.tone === 'danger' ? 'btn-danger' : ''}`} onClick={() => answerConfirm(true)}>{req.confirmLabel}</button>
+          {req.alt ? <>
+            <button className="btn ghost danger-text" onClick={() => answerConfirm(true)}>{req.confirmLabel}</button>
+            <button ref={okRef} className="btn" onClick={() => { req.alt!.run(); answerConfirm(true) }}>{req.alt.label}</button>
+          </> : (
+            <button ref={okRef} className={`btn ${req.tone === 'danger' ? 'btn-danger' : ''}`} onClick={() => answerConfirm(true)}>{req.confirmLabel}</button>
+          )}
         </div>
       </div>
     </div>
