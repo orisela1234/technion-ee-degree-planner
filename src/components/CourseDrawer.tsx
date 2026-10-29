@@ -13,7 +13,7 @@ import { itemStatus, STATUS_LABEL, isDone, isFailed } from '../lib/types'
 import { MANDATORY_IDS } from '../data/track'
 import { AvgChart } from './AvgChart'
 import { ReviewsPanel, ReviewStrip } from './ReviewsPanel'
-import { reviewsOf } from '../lib/reviews'
+import { hasReviewData, reviewsOf } from '../lib/reviews'
 import { BarChart3, BookOpen, CalendarClock, ChevronDown, CircleDashed, ExternalLink, GitBranch, Layers, MessageSquare, PencilLine, RotateCcw, ShieldCheck, X } from 'lucide-react'
 import { canMarkBinary, isBinaryPass, verifyState } from '../lib/grades'
 
@@ -143,12 +143,12 @@ export function CourseDrawer() {
               <div className="t-sub">ציון סופי</div>
             </div>
             <div className="tile">
-              <div className="t-label">עומס שבועי</div>
+              <div className="t-label">שעות שבועיות</div>
               <div className="t-val">{work ? `${work.hours}ש'` : '—'}</div>
               <div className="t-sub">{work ? work.label : ''}</div>
             </div>
             <div className="tile">
-              <div className="t-label">קושי משוער</div>
+              <div className="t-label" title="לפי ממוצעי הציונים ואחוזי המעבר, ביחס לשאר קורסי הפקולטה">קושי משוער</div>
               <div className="t-val">{diff ? diff.label : '—'}</div>
               {diff && <div className="meter"><i style={{ width: `${(diff.score / 5) * 100}%` }} className={`d${Math.round(diff.score)}`} /></div>}
             </div>
@@ -424,7 +424,7 @@ export function CourseDrawer() {
           )}
 
           <Section
-            title="חוות דעת, עומס ונוכחות" icon={<MessageSquare size={16} />} defaultOpen={!!reviewsOf(courseId)}
+            title={hasReviewData ? 'חוות דעת, עומס ונוכחות' : 'חוות דעת והערות'} icon={<MessageSquare size={16} />} defaultOpen={!!reviewsOf(courseId)}
             badge={reviewsOf(courseId) ? <span className="pill">{reviewsOf(courseId)!.n}</span> : undefined}
           >
             <ReviewsPanel courseId={courseId} />

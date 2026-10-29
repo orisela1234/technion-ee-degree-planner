@@ -65,16 +65,17 @@ export function HoverCard() {
         <div><span>ממוצע</span><b>{st.recentAvg != null ? Math.round(st.recentAvg) : '—'}</b></div>
         <div><span>עוברים</span><b>{st.recentPass != null ? `${Math.round(st.recentPass)}%` : '—'}</b></div>
         <div><span>שעות</span><b>{work ? work.hours : '—'}</b></div>
-        <div><span>קושי</span><b className={diff ? `dtext d${Math.round(diff.score)}` : ''}>{diff?.label ?? '—'}</b></div>
+        <div title="קושי משוער – לפי ממוצעי הציונים ואחוזי המעבר, ביחס לשאר קורסי הפקולטה"><span>קושי</span><b className={diff ? `dtext d${Math.round(diff.score)}` : ''}>{diff?.label ?? '—'}</b></div>
       </div>
       {lect && <div className="hc-line">מרצה: {lect}</div>}
       {(() => {
         const r = reviewsOf(hc.courseId)
         const att = attendanceOf(hc.courseId)
+        if (!(r && r.g != null) && att.level === 'unknown') return null
         return (
           <div className="hc-line">
             {r && r.g != null && <>★ {r.g.toFixed(1)} · עומס {r.w?.toFixed(1) ?? '—'}/5 · {r.n} חוות דעת · </>}
-            <span className={`att-${att.level}`}>{att.label}</span>
+            {att.level !== 'unknown' && <span className={`att-${att.level}`}>{att.label}</span>}
           </div>
         )
       })()}

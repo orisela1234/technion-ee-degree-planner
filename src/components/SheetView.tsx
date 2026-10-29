@@ -169,7 +169,7 @@ export function SheetView({ onboarding }: { onboarding?: boolean } = {}) {
         >
           {busy ? <Loader2 size={26} className="spin" aria-hidden /> : <FileText size={26} aria-hidden />}
           <b>{busy ? 'קורא את הגיליון…' : 'גררו לכאן את קובץ ה-PDF של תעודת הציונים, או לחצו לבחירה'}</b>
-          <span className="muted small">הקובץ שמורידים מהטכניון (כמו "תדפיס"). לפני העדכון תראו בדיוק מה השתנה.</span>
+          <span className="muted small">הקובץ שמורידים מהטכניון (כמו "תדפיס"). {onboarding ? 'לפני שהתכנון נבנה תראו בדיוק מה נקרא מהקובץ.' : 'לפני העדכון תראו בדיוק מה השתנה.'}</span>
         </button>
         <input ref={inputRef} type="file" accept="application/pdf,.pdf" hidden onChange={(e) => readFile(e.target.files?.[0])} />
         {error && <div className="sheet-error"><AlertTriangle size={15} aria-hidden /> {error}</div>}

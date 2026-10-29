@@ -257,10 +257,12 @@ export function CoursePool() {
         <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label="מיון">
           <option value="smart">מיון: משותפים ומה שאפשר הכי מוקדם</option>
           <option value="avg">מיון: ממוצע גבוה</option>
-          <option value="easy">מיון: הכי נוח (לפי ציונים)</option>
-          <option value="rating">מיון: דירוג כללי גבוה (חוות דעת)</option>
-          <option value="light">מיון: עומס נמוך (חוות דעת)</option>
-          <option value="reviews">מיון: הכי הרבה חוות דעת</option>
+          <option value="easy">מיון: ממוצעים גבוהים ואחוזי מעבר (נוח יותר)</option>
+          {hasReviewData && <>
+            <option value="rating">מיון: דירוג כללי גבוה (חוות דעת)</option>
+            <option value="light">מיון: עומס נמוך (חוות דעת)</option>
+            <option value="reviews">מיון: הכי הרבה חוות דעת</option>
+          </>}
           <option value="points">מיון: נק"ז</option>
           <option value="id">מיון: מספר קורס</option>
         </select>
@@ -271,8 +273,7 @@ export function CoursePool() {
       </div>
 
       <div className="pool-count muted small">
-        {rows.length} קורסים
-        {!hasReviewData && <span className="no-reviews" title="מריצים פעם אחת את scripts/fetch_reviews.py ובונים מחדש"> · חוות הדעת מצ'יזפורק עוד לא נשאבו</span>}
+        {rows.length === 1 ? 'קורס אחד' : `${rows.length} קורסים`}
       </div>
 
       <div className="pool-list">
@@ -300,7 +301,7 @@ export function CoursePool() {
                 <div className="pi-meta">
                   <span className="mono">{r.id}</span>
                   <span>{fmtPts(r.c?.points ?? 0)} נק"ז</span>
-                  {englishSems(r.id).length > 0 && <span className="en-tag yes" title={`נלמד באנגלית ב: englishSems(r.id).map((s) => (s === '*' ? 'תמיד' : semLabel(s))).join(', ')`}>EN</span>}
+                  {englishSems(r.id).length > 0 && <span className="en-tag yes" title={`נלמד באנגלית: ${englishSems(r.id).map((s) => (s === '*' ? 'בכל סמסטר' : semLabel(s))).join(', ')}`}>EN</span>}
                   {r.stats.recentAvg != null && <span title="ממוצע סופי ב-3 הסמסטרים האחרונים">ממוצע {Math.round(r.stats.recentAvg)}</span>}
                   {r.diff && <span className={`diff d${Math.round(r.diff.score)}`}>{r.diff.label}</span>}
                 </div>

@@ -5,6 +5,9 @@ import { itemPoints } from './requirements'
 import type { AppState, PlanItem } from './types'
 import { isFailed } from './types'
 
+/** ממוצע מצטבר מחושב – שתי ספרות אחרי הנקודה, כדי שעיגול לא יציג למשל 85.0 כשהממוצע 84.96 */
+export const fmtGpa = (g: number) => g.toFixed(2)
+
 export const BINARY_MAX_COURSES = 5
 export const BINARY_MAX_POINTS = +(TRACK.totalPoints * 0.1).toFixed(2)
 

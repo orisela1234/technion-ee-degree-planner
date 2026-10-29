@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Check, CircleDot, KeyRound, ListChecks, Lock, Pin, Plus, ShieldAlert, X } from 'lucide-react'
+import { Check, CircleDot, KeyRound, ListChecks, Lock, Pin, Plus, Star, X } from 'lucide-react'
 import { useStore, MAX_CHAINS } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { usePlanActions } from '../lib/actions'
@@ -83,7 +83,7 @@ export function ChainsView() {
       >
         <span className={`ch-st ${st.cls}`} title={st.text}><st.Icon size={13} /></span>
         <div className="ch-main">
-          <div className="ch-name">{must && <span className="role must">חובה</span>}{c?.name ?? 'קורס שלא נפתח לאחרונה'}</div>
+          <div className="ch-name">{must && <span className="role must">חובה</span>}{c?.name ?? '(קורס שלא נפתח לאחרונה)'}</div>
           <div className="ch-meta">
             <span className="mono">{id}</span>
             {c && <span>{fmtPts(c.points)} נק"ז</span>}
@@ -152,8 +152,9 @@ export function ChainsView() {
       .sort((a, b) => Number(has(b)) - Number(has(a)) || (courseStats(b).recentAvg ?? 0) - (courseStats(a).recentAvg ?? 0))
     const freeTaken = rest.filter(has).length
     // קדמים שחסרים לכל קורסי החובה (כולל קורסי ה"אחד מ")
+    // קדמים חסרים: לקורסי החובה, ומבין האפשרויות – רק למה שכבר נבחר (קדם של חלופה שלא נבחרה לא "חסר")
     const missingPre = new Set<string>()
-    ;[...mustIds, ...optionIds].forEach((id) => {
+    ;[...mustIds, ...optionIds.filter(has)].forEach((id) => {
       if (doneIds.has(id)) return
       evalPrereq(id, allHave).missing.forEach((m) => { if (!ruleIdSet.has(m)) missingPre.add(m) })
     })
@@ -181,7 +182,7 @@ export function ChainsView() {
 
         {/* חובה – תמיד למעלה ובולט */}
         <section className="cc-must">
-          <div className="cc-h"><ShieldAlert size={15} /> חובה בשרשרת</div>
+          <div className="cc-h"><Star size={15} aria-hidden /> חובה בשרשרת</div>
           {rules.map((r, k) => {
             const takenCount = r.ids.filter(has).length
             const ok = takenCount >= r.n
@@ -203,17 +204,17 @@ export function ChainsView() {
               </div>
             )
           })}
-          {g.courses.includes(OPT_COURSE) && (
-            <p className="muted small">* במקום 00460197 אפשר אחד מ: 01040193 (תורת האופטימיזציה) או 02360330 (מבוא לאופטימיזציה).</p>
-          )}
           {g.exclusive?.map((ex) => (
             <p key={ex.join()} className="muted small">רק אחד נספר מתוך: {ex.map((id) => `${nameOf(id)} (${id})`).join(' / ')}</p>
           ))}
         </section>
 
         <section className="cc-free">
-          <div className="cc-h"><ListChecks size={15} /> ועוד {free} קורסים לבחירה מרשימת השרשרת <span className={`pill ${freeTaken >= free ? 'ok' : ''}`}>{Math.min(freeTaken, free)}/{free}</span></div>
+          <div className="cc-h"><ListChecks size={15} /> {free === 1 ? 'ועוד קורס אחד לבחירה' : `ועוד ${free} קורסים לבחירה`} מרשימת השרשרת <span className={`pill ${freeTaken >= free ? 'ok' : ''}`}>{Math.min(freeTaken, free)}/{free}</span></div>
           <p className="muted small">כדי להגיע ל-{double ? g.double!.count : g.single.count} קורסים: {mustIds.length} חובה{optionIds.length ? ` + ${rules.filter((r) => r.kind !== 'all').reduce((a, r) => a + r.n, 0)} מתוך הבחירה המחייבת` : ''} + {free} מהרשימה (כל קורס מהשרשרת שלא נספר כחובה).</p>
+          {g.courses.includes(OPT_COURSE) && (
+            <p className="muted small">שיטות חישוביות באופטימיזציה (00460197) – אפשר להחליף ב-01040193 (תורת האופטימיזציה) או ב-02360330 (מבוא לאופטימיזציה), ורק אחד מהם נספר.</p>
+          )}
         </section>
 
         <details className="cc-pre" open={missingPre.size > 0}>
@@ -300,7 +301,7 @@ export function ChainsView() {
                             dispatch({ type: 'selectChain', id: g.id, double: v.double })
                           }}
                         >
-                          {on ? '✓ ' : ''}{v.double ? 'כפולה' : 'בודדת'} · {v.count} קורסים
+                          {on ? <Check size={13} aria-hidden /> : <Plus size={13} aria-hidden />}{v.double ? 'כפולה' : 'בודדת'} · {v.count} קורסים
                         </button>
                         <RuleSummary g={g} double={v.double} compact />
                       </div>

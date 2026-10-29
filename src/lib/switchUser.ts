@@ -33,7 +33,7 @@ export async function confirmNewUser(state: AppState, next?: GradeSheet) {
       `כל התכנון הנוכחי${cur.student ? ` של ${norm(cur.student)}` : ''} יימחק מהדפדפן: הקורסים שתכננת, השרשראות, הציונים הצפויים, ההערות והגיליונות הקודמים.`,
       next ? `ייבנה תכנון חדש מאפס לפי הגיליון מ-${fmtDate(next.issued)}.` : 'אחר כך מעלים את תעודת הציונים של המשתמש החדש, והתכנון נבנה ממנה.',
       backedUp
-        ? `יש גיבוי מ-${new Date(st.lastBackup).toLocaleDateString('he-IL')} שכולל את כל השינויים – אפשר לחזור אליו ב"ייבוא גיבוי".`
+        ? `יש גיבוי מ-${new Date(st.lastBackup).toLocaleDateString('he-IL')} שכולל את כל השינויים – אפשר לחזור אליו ב"טעינת גיבוי".`
         : 'כדי שאפשר יהיה לחזור לתכנון הנוכחי – כדאי להוריד קודם גיבוי שלו.',
     ],
     confirmLabel: backedUp ? 'התחל מחדש' : 'בלי גיבוי',

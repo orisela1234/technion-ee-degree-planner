@@ -6,7 +6,7 @@ import { useUi } from '../lib/ui'
 import { usePlanActions } from '../lib/actions'
 import { setDropHandler, setGhostEl, useDrag, type DragOver, type DragPayload } from '../lib/drag'
 import { checkPlacement, planMove } from '../lib/prereq'
-import { COURSES, fmtPts, semLabel } from '../lib/catalog'
+import { COURSES, fmtPts, nCourses, semLabel } from '../lib/catalog'
 import { colorClass, itemName, itemPoints } from '../lib/requirements'
 
 /** הכרטיס הצף בזמן גרירה + ביצוע ההפלה */
@@ -72,7 +72,7 @@ export function DragLayer() {
       if (!plan.ok) return { tone: 'bad', text: plan.reasons[0]?.startsWith('חסר קדם') ? `${plan.reasons[0]} · שחרור יבקש אישור חריג` : plan.reasons[0] ?? 'לא אפשרי' }
       const pushed = plan.moves.length - 1
       return pushed > 0
-        ? { tone: 'push', text: `${semLabel(over.sem)} · ידחוף ${pushed} קורסים קדימה` }
+        ? { tone: 'push', text: `${semLabel(over.sem)} · ידחוף ${nCourses(pushed)} קדימה` }
         : { tone: 'ok', text: semLabel(over.sem) }
     }
     const c = checkPlacement(state, { courseId, targetSem: over.sem })

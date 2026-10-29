@@ -1,8 +1,8 @@
 import { TRACK, GROUPS } from '../data/track'
-import { COURSES, englishStatus, fmtPts, semLabel } from './catalog'
+import { COURSES, englishStatus, fmtPts, nCourses, semLabel } from './catalog'
 import { ENGLISH_A, ENGLISH_B } from '../data/english'
 import { computeRequirements, groupsSummary, gpa, itemCategory, itemName, itemPoints } from './requirements'
-import { binaryUsage, withinBinaryLimit, BINARY_MAX_COURSES, BINARY_MAX_POINTS } from './grades'
+import { binaryUsage, fmtGpa, withinBinaryLimit, BINARY_MAX_COURSES, BINARY_MAX_POINTS } from './grades'
 import { chainAllocation } from './chainAlloc'
 import { variantLabel } from './chains'
 import { findIssues } from './integrity'
@@ -124,7 +124,7 @@ export function degreeAudit(state: AppState, mode: 'done' | 'plan'): Audit {
   add({
     id: 'distinct', group: 'chains', title: 'כל קורס נספר בשרשרת אחת בלבד',
     status: 'ok',
-    detail: contested.length ? `${contested.length} קורסים משותפים – כל אחד משויך לשרשרת אחת` : 'אין קורסים משותפים בין השרשראות שבחרת',
+    detail: contested.length ? `${contested.length === 1 ? 'קורס משותף אחד – משויך' : `${contested.length} קורסים משותפים – כל אחד משויך`} לשרשרת אחת` : 'אין קורסים משותפים בין השרשראות שבחרת',
     lines: contested.map(([id]) => {
       const idx = state.selectedGroups.findIndex((s) => s.id === alloc.assign.get(id))
       return `${COURSES[id]?.name ?? id} → שרשרת ${idx + 1}${alloc.pinned.has(id) ? ' (ידני)' : ''}`
@@ -144,7 +144,7 @@ export function degreeAudit(state: AppState, mode: 'done' | 'plan'): Audit {
   add({
     id: 'gpa', group: 'rules', title: 'ממוצע מצטבר 65 ומעלה',
     status: g == null || g >= 65 ? 'ok' : 'fail',
-    detail: g == null ? 'אין עדיין ציונים' : `ממוצע ${g.toFixed(1)}${mode === 'plan' ? ' (כולל ציונים צפויים)' : ''}`,
+    detail: g == null ? 'אין עדיין ציונים' : `ממוצע ${fmtGpa(g)}${mode === 'plan' ? ' (כולל ציונים צפויים)' : ''}`,
     source: `${REGS} – 3.2.1 "וממוצע ציוניו 65 ומעלה, זכאי לקבל את התואר"`, go: 'grades',
   })
   // ---- שני קורסים באנגלית (תקנה 1.3.3) – למי שהתחיל מתשפ"ב ----
@@ -153,7 +153,9 @@ export function degreeAudit(state: AppState, mode: 'done' | 'plan'): Audit {
   if (firstSem >= '202101') {
     const recB = sheet.records.find((r) => r.id === ENGLISH_B)
     const exemptEng = recB?.kind === 'exempt-credit' || recB?.kind === 'exempt-nocredit'
+    // קורס הכשרה בלי נק"ז (למשל אנגלית למתקדמים א') לא נכנס לתרשים – נבדק גם מול הגיליון
     const took = (id: string) => items.some((i) => i.courseId === id && !(i.result?.kind === 'exempt'))
+      || sheet.records.some((r) => r.id === id && (r.kind === 'grade' || r.kind === 'pass'))
     const training = exemptEng ? 0 : (took(ENGLISH_A) ? 1 : 0) + (took(ENGLISH_B) ? 1 : 0)
     const content = items
       .filter((i) => i.courseId && i.courseId !== ENGLISH_A && i.courseId !== ENGLISH_B && i.result?.kind !== 'exempt')
@@ -204,9 +206,9 @@ export function degreeAudit(state: AppState, mode: 'done' | 'plan'): Audit {
   })
   const bu = binaryUsage(state.items)
   add({
-    id: 'binary', group: 'rules', title: `עובר בינארי – עד ${BINARY_MAX_COURSES} קורסים ו-${fmtPts(BINARY_MAX_POINTS)} נק'`,
+    id: 'binary', group: 'rules', title: `עובר בינארי – עד ${BINARY_MAX_COURSES} קורסים ו-${BINARY_MAX_POINTS} נק'`,
     status: withinBinaryLimit(bu.count, bu.points, state.binaryRule) ? 'ok' : 'fail',
-    detail: `${bu.count} קורסים · ${pts(bu.points)} נק'`,
+    detail: `${nCourses(bu.count)} · ${pts(bu.points)} נק'`,
     source: 'מתווה המילואים – "לא יעלה על 10% מסך נקודות הזכות"', go: 'grades',
   })
   const social = state.credits.filter((c) => isSocialCredit(c.id)).reduce((a, c) => a + c.points, 0)
@@ -241,7 +243,7 @@ export function degreeAudit(state: AppState, mode: 'done' | 'plan'): Audit {
     add({
       id: 'prereq', group: 'plan', title: 'דרישות קדם מתקיימות בסדר הסמסטרים',
       status: blocked.length ? 'fail' : waived.length ? 'warn' : 'ok',
-      detail: blocked.length ? `${blocked.length} קורסים בלי קדם` : waived.length ? `${waived.length} קורסים באישור חריג – לוודא שהאישור התקבל` : 'תקין',
+      detail: blocked.length ? `${nCourses(blocked.length)} בלי קדם` : waived.length ? `${nCourses(waived.length)} באישור חריג – לוודא שהאישור התקבל` : 'תקין',
       lines: invalid.map((i) => `${itemName(i)} · ${semLabel(i.sem)}${i.waived ? ' (אישור חריג)' : ''}`), source: 'קדמים מהקטלוג/צ\'יזפורק', go: 'plan',
     })
   }

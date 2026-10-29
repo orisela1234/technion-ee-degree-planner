@@ -306,6 +306,8 @@ export const dependentsOf = (id: string): string[] => dependentsIndex.get(id) ??
 export const cheeseForkUrl = (id: string) => `https://cheesefork.cf/?course=${id}`
 export const histogramsUrl = (id: string) => `https://michael-maltsev.github.io/technion-histograms/${id}/`
 
+/** "קורס אחד" / "3 קורסים" – בלי "1 קורסים" */
+export const nCourses = (n: number) => (n === 1 ? 'קורס אחד' : `${n} קורסים`)
 export const fmtPts = (n: number) => (Number.isInteger(n) ? `${n}.0` : `${+n.toFixed(1)}`)
 
 // ---------- קורסים שנלמדים באנגלית (תקנה 1.3.3) ----------

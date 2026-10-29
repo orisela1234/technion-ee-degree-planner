@@ -4,13 +4,13 @@ import { useStore } from '../lib/store'
 import { focusColor, useUi } from '../lib/ui'
 import { setColResolver, useDrag } from '../lib/drag'
 import { checkPlacement, computeEdges, itemValidity, planMove } from '../lib/prereq'
-import { CATEGORY_TITLE, CATEGORY_ORDER, HUE_LABEL, fmtPts, hueOf, nextSemCode, seasonOf, semLabel, semYears, COURSES, type Hue } from '../lib/catalog'
+import { CATEGORY_TITLE, CATEGORY_ORDER, HUE_LABEL, fmtPts, hueOf, nextSemCode, seasonOf, semLabel, semYears, COURSES, type Hue, nCourses } from '../lib/catalog'
 import { colorClass, gpa, itemCategory, itemName, itemPoints } from '../lib/requirements'
 import { computeLayout, routeEdges, GRID, type Rect, type RoutedPath } from '../lib/layout'
 import { chainsOf } from '../lib/chains'
 import { chainAllocation } from '../lib/chainAlloc'
 import { chainHover } from './ChainCard'
-import { DegreeStatusBadge } from './AuditView'
+import { goTab } from './AuditView'
 import { itemStatus, isFailed, type PlanItem } from '../lib/types'
 import { GROUPS } from '../data/track'
 import { CourseCard, type CardMark } from './CourseCard'
@@ -115,7 +115,7 @@ export function Flowchart() {
         const plan = planMove(state, dragItem.key, sem)
         const moves = new Map(plan.moves.filter((x) => x.key !== dragItem.key).map((x) => [x.key, x.to]))
         if (!plan.ok) m.set(sem, { tone: 'bad', text: plan.reasons[0] ?? 'לא אפשרי', moves })
-        else if (moves.size) m.set(sem, { tone: 'push', text: `ידחוף ${moves.size} קורסים`, moves })
+        else if (moves.size) m.set(sem, { tone: 'push', text: `ידחוף ${nCourses(moves.size)}`, moves })
         else m.set(sem, { tone: plan.warnings.length ? 'warn' : 'ok', text: plan.warnings[0] ?? 'אפשר', moves })
       } else {
         const c = checkPlacement(state, { courseId: drag.payload.courseId, targetSem: sem })
@@ -270,10 +270,9 @@ export function Flowchart() {
   return (
     <div className={`chart-wrap density-${density} ${drag.payload ? 'dragging' : ''}`}>
       <div className="chart-toolbar">
-        <div className="tb-group tb-status"><DegreeStatusBadge /></div>
         <div className="tb-group">
           <span className="tb-label"><Layers size={14} /> שרשראות</span>
-          {state.selectedGroups.length === 0 && <span className="muted small">לא נבחרו – בחרו בלשונית "שרשראות"</span>}
+          {state.selectedGroups.length === 0 && <button className="link-btn small" onClick={() => goTab('chains')}>עוד לא נבחרו – לבחירת שרשראות</button>}
           {state.selectedGroups.map((s, i) => (
             <span key={s.id} className={`chain-chip c${i + 1}`} tabIndex={0} {...chainHover(s.id)}>
               <b>{i + 1}</b> {GROUPS.find((g) => g.id === s.id)?.short}{s.double ? ' – כפולה' : ''}
@@ -316,7 +315,7 @@ export function Flowchart() {
           {legend.filter((l) => colorBy === 'category' || l.n > 0).map((l) => (
             <span
               key={l.cls} role="listitem" tabIndex={0} className={`lg-cat ${l.cls}`}
-              title={`${l.label}: ${l.n} קורסים בתרשים · ${fmtPts(l.pts)} נק"ז – מעבר עכבר מדגיש אותם`}
+              title={`${l.label}: ${nCourses(l.n)} בתרשים · ${fmtPts(l.pts)} נק"ז – מעבר עכבר מדגיש אותם`}
               onMouseEnter={() => focusColor(l.focus)} onMouseLeave={() => focusColor(null)}
               onFocus={() => focusColor(l.focus)} onBlur={() => focusColor(null)}
             >

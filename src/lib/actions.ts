@@ -56,7 +56,7 @@ export function usePlanActions() {
           ...plan.warnings,
         ]
         if (waived) toast(`"${name}" שובץ ב${semLabel(opts.sem)} באישור חריג – מסומן באדום`, 'warn', lines, undo)
-        else if (pushed.length) toast(`"${name}" עבר ל${semLabel(opts.sem)} · ${pushed.length} קורסים נדחפו קדימה`, 'info', lines, undo)
+        else if (pushed.length) toast(`"${name}" עבר ל${semLabel(opts.sem)} · ${pushed.length === 1 ? 'קורס אחד נדחף' : `${pushed.length} קורסים נדחפו`} קדימה`, 'info', lines, undo)
         else if (plan.warnings.length) toast(`"${name}" עבר ל${semLabel(opts.sem)}`, 'warn', plan.warnings, undo)
       }
 

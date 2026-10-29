@@ -7,7 +7,7 @@ export function RuleSummary({ g, double, compact }: { g: SpecGroup; double: bool
   const rules = chainRules(g, double)
   const free = freeSlots(g, double)
   const count = double && g.double ? g.double.count : g.single.count
-  const name = (id: string) => COURSES[id]?.name ?? 'קורס שלא נפתח לאחרונה'
+  const name = (id: string) => COURSES[id]?.name ?? '(קורס שלא נפתח לאחרונה)'
   return (
     <div className={`rule-sum ${compact ? 'compact' : ''}`}>
       {rules.map((r, k) => (
@@ -25,7 +25,7 @@ export function RuleSummary({ g, double, compact }: { g: SpecGroup; double: bool
         </div>
       ))}
       <div className="rs-line rs-total">
-        + {free} קורסים נוספים מרשימת השרשרת · <b>סה"כ {count} קורסים</b>{double ? ' · נספרת כשתי קבוצות' : ''}
+        {free > 0 && <>+ {free === 1 ? 'קורס נוסף אחד' : `${free} קורסים נוספים`} מרשימת השרשרת · </>}<b>סה"כ {count} קורסים</b>{double ? ' · נספרת כשתי קבוצות' : ''}
       </div>
     </div>
   )

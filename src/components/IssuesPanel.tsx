@@ -34,7 +34,7 @@ export function IssuesPanel() {
       <button className="iss-head" onClick={() => setOpen(!open)} aria-expanded={open}>
         <AlertTriangle size={16} />
         <b>
-          {dups > 0 && `${dups} כפילויות`}{dups > 0 && sheet > 0 && ' · '}{sheet > 0 && `${sheet} אי-התאמות לגיליון הציונים`}
+          {dups > 0 && (dups === 1 ? 'כפילות אחת' : `${dups} כפילויות`)}{dups > 0 && sheet > 0 && ' · '}{sheet > 0 && (sheet === 1 ? 'אי-התאמה אחת לגיליון הציונים' : `${sheet} אי-התאמות לגיליון הציונים`)}
         </b>
         <span className="muted small">בדיקה אוטומטית של התכנון</span>
         <ChevronDown size={16} className="iss-chev" />

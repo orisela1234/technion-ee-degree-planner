@@ -18,7 +18,7 @@ export function DegreeStatusBadge({ compact }: { compact?: boolean }) {
     <button
       className={`degree-badge ${a.closes ? 'ok' : 'bad'} ${compact ? 'compact' : ''}`}
       onClick={() => goTab('audit')}
-      title={a.closes ? 'כל תנאי סגירת התואר מתקיימים לפי התכנון – לחיצה לפירוט' : `${a.fails} תנאים לא מתקיימים – לחיצה לפירוט`}
+      title={a.closes ? 'כל תנאי סגירת התואר מתקיימים לפי התכנון – לחיצה לפירוט' : `${a.fails === 1 ? 'תנאי אחד לא מתקיים' : `${a.fails} תנאים לא מתקיימים`} – לחיצה לפירוט`}
     >
       <Icon size={compact ? 13 : 15} aria-hidden />
       {a.closes ? 'התכנון סוגר את התואר' : `התואר לא נסגר · ${a.fails} ${a.fails === 1 ? 'תנאי חסר' : 'תנאים חסרים'}`}

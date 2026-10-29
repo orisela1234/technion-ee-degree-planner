@@ -40,14 +40,16 @@ function Dist({ counts, cls }: { counts: number[]; cls: string }) {
 export function ReviewStrip({ courseId }: { courseId: string }) {
   const r = reviewsOf(courseId)
   const att = attendanceOf(courseId)
+  // בלי חוות דעת ובלי מידע על נוכחות – אין מה להציג
+  if (!r && att.level === 'unknown') return null
   return (
     <div className="review-strip">
-      {r && r.g != null ? (
+      {r && r.g != null && (
         <span className="rs-item" title={GENERAL_LABEL[Math.round(r.g)]}><Star size={13} fill="currentColor" className="c-star" /> {r.g.toFixed(1)}</span>
-      ) : <span className="rs-item muted"><Star size={13} /> אין דירוג</span>}
+      )}
       {r && r.w != null && <span className="rs-item" title={WORKLOAD_LABEL[Math.round(r.w)]}><Dumbbell size={13} /> עומס {r.w.toFixed(1)}/5</span>}
       {r && <span className="rs-item muted">{r.n} חוות דעת</span>}
-      <span className={`rs-item att-${att.level}`} title={att.source}><UserCheck size={13} /> {att.label}</span>
+      {att.level !== 'unknown' && <span className={`rs-item att-${att.level}`} title={att.source}><UserCheck size={13} /> {att.label}</span>}
     </div>
   )
 }
@@ -61,11 +63,9 @@ export function ReviewsPanel({ courseId }: { courseId: string }) {
   if (!r) {
     return (
       <div className="rev-empty">
-        <div className={`att-line att-${att.level}`}><UserCheck size={14} /> {att.label} <span className="muted small">· {att.source}</span></div>
+        {att.level !== 'unknown' && <div className={`att-line att-${att.level}`}><UserCheck size={14} /> {att.label} <span className="muted small">· {att.source}</span></div>}
         <p className="muted small">
-          {hasReviewData
-            ? 'אין חוות דעת לקורס הזה ב-CheeseFork.'
-            : 'חוות הדעת עוד לא נשאבו. אחרי הרצת scripts/fetch_reviews.py יופיעו כאן דירוגים, עומס, ציונים שדווחו ונוכחות – לכל הקורסים.'}
+          {hasReviewData ? 'אין חוות דעת לקורס הזה ב-CheeseFork.' : 'חוות דעת של סטודנטים על הקורס – בקישור ל-CheeseFork.'}
         </p>
       </div>
     )

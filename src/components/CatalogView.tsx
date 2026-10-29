@@ -3,12 +3,12 @@ import { useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import {
   COURSES, courseStats, difficultyOf, fmtPts, groupsOf, isTrackRelevant, offeredSeasons, semLabel,
-  workloadOf, CATEGORY_LABEL, categoryOfCourse, type Season,
+  workloadOf, CATEGORY_LABEL, categoryOfCourse, nCourses, type Season,
 } from '../lib/catalog'
 import { GROUPS } from '../data/track'
 import { colorClass } from '../lib/requirements'
 import { itemStatus, STATUS_LABEL, isFailed } from '../lib/types'
-import { attendanceOf, reviewsOf } from '../lib/reviews'
+import { attendanceOf, hasReviewData, reviewsOf } from '../lib/reviews'
 
 type Key = 'id' | 'name' | 'points' | 'avg' | 'pass' | 'hours' | 'diff' | 'rating' | 'load' | 'nrev'
 
@@ -65,6 +65,8 @@ export function CatalogView() {
     })
   }, [rows, sortKey, asc])
 
+  // נוכחות ידועה רק לחלק קטן מהקורסים (מהערות הרישום) – העמודה מוצגת רק כשיש בה מידע
+  const showAtt = sorted.some((r) => attendanceOf(r.c.id).level !== 'unknown')
   const th = (k: Key, label: string) => (
     <th onClick={() => { if (sortKey === k) setAsc(!asc); else { setSortKey(k); setAsc(k === 'id' || k === 'name') } }} className={sortKey === k ? 'sorted' : ''}>
       {label}{sortKey === k ? (asc ? ' ▲' : ' ▼') : ''}
@@ -83,7 +85,7 @@ export function CatalogView() {
           <input type="checkbox" checked={hideOld} onChange={(e) => setHideOld(e.target.checked)} />
           רק קורסים שנפתחו בשנה האחרונה
         </label>
-        <span className="muted">{sorted.length} קורסים</span>
+        <span className="muted">{nCourses(sorted.length)}</span>
       </div>
       <div className="table-wrap">
         <table className="cat-table">
@@ -96,12 +98,14 @@ export function CatalogView() {
               <th>קבוצות</th>
               {th('avg', 'ממוצע')}
               {th('pass', 'עוברים')}
-              {th('hours', 'שעות')}
-              {th('diff', 'קושי')}
-              {th('rating', 'דירוג')}
-              {th('load', 'עומס')}
-              {th('nrev', 'חוות דעת')}
-              <th>נוכחות</th>
+              {th('hours', 'ש"ש')}
+              {th('diff', 'קושי משוער')}
+              {hasReviewData && <>
+                {th('rating', 'דירוג')}
+                {th('load', 'עומס')}
+                {th('nrev', 'חוות דעת')}
+              </>}
+              {showAtt && <th>נוכחות</th>}
               <th>נלמד</th>
               <th>בתכנון</th>
             </tr>
@@ -120,10 +124,12 @@ export function CatalogView() {
                   <td>{st.recentPass != null ? `${Math.round(st.recentPass)}%` : '—'}</td>
                   <td>{work ? work.hours : '—'}</td>
                   <td>{diff ? <span className={`diff d${Math.round(diff.score)}`}>{diff.label}</span> : '—'}</td>
-                  <td>{reviewsOf(c.id)?.g != null ? <b>★ {reviewsOf(c.id)!.g!.toFixed(1)}</b> : '—'}</td>
-                  <td>{reviewsOf(c.id)?.w != null ? `${reviewsOf(c.id)!.w!.toFixed(1)}/5` : '—'}</td>
-                  <td className="muted">{reviewsOf(c.id)?.n ?? '—'}</td>
-                  <td className={`small att-${attendanceOf(c.id).level}`}>{attendanceOf(c.id).level === 'unknown' ? '—' : attendanceOf(c.id).label}</td>
+                  {hasReviewData && <>
+                    <td>{reviewsOf(c.id)?.g != null ? <b>★ {reviewsOf(c.id)!.g!.toFixed(1)}</b> : '—'}</td>
+                    <td>{reviewsOf(c.id)?.w != null ? `${reviewsOf(c.id)!.w!.toFixed(1)}/5` : '—'}</td>
+                    <td className="muted">{reviewsOf(c.id)?.n ?? '—'}</td>
+                  </>}
+                  {showAtt && <td className={`small att-${attendanceOf(c.id).level}`}>{attendanceOf(c.id).level === 'unknown' ? '—' : attendanceOf(c.id).label}</td>}
                   <td className="seasons">{(['winter', 'spring', 'summer'] as Season[]).map((s) => <i key={s} className={seasons.has(s) ? 'on' : ''}>{SEASON_SHORT[s]}</i>)}</td>
                   <td className="small">{item ? `${STATUS_LABEL[itemStatus(item, state.currentSem)]} · ${semLabel(item.sem)}` : ''}</td>
                 </tr>

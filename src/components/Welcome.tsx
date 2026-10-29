@@ -32,7 +32,7 @@ export function Welcome() {
         <ul className="wl-points">
           <li><Lock size={16} aria-hidden /><span><b>פרטי לגמרי:</b> הקובץ נקרא רק בדפדפן שלך. שום דבר לא נשלח לשרת, ואף אחד אחר לא רואה את הנתונים. מספר תעודת הזהות לא נשמר.</span></li>
           <li><Route size={16} aria-hidden /><span><b>מותאם למסלול הנדסת חשמל</b> (004004-1-000) לפי קטלוג תשפ"ו – כולל קבוצות ההתמחות, מעבדות, מל"ג וספורט.</span></li>
-          <li><DatabaseBackup size={16} aria-hidden /><span><b>הכול נשמר אוטומטית</b> בדפדפן הזה. לעבור למחשב אחר – "ייצוא גיבוי" בהגדרות, ואז "ייבוא" כאן.</span></li>
+          <li><DatabaseBackup size={16} aria-hidden /><span><b>הכול נשמר אוטומטית</b> בדפדפן הזה. לעבור למחשב אחר – "הורדת גיבוי" בהגדרות, ואז "טעינת גיבוי" כאן.</span></li>
         </ul>
         {safariAtRisk() && (
           <p className="wl-safari">
@@ -52,7 +52,7 @@ export function Welcome() {
       )}
       <section className="wl-foot">
         <span className="muted small">יש לך כבר גיבוי מהמערכת?</span>
-        <button className="btn ghost" onClick={() => fileRef.current?.click()}><DatabaseBackup size={15} aria-hidden /> ייבוא גיבוי (JSON)</button>
+        <button className="btn ghost" onClick={() => fileRef.current?.click()}><DatabaseBackup size={15} aria-hidden /> טעינת גיבוי</button>
         <input
           ref={fileRef} type="file" accept="application/json" hidden
           onChange={async (e) => {

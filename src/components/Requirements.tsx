@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { fmtGpa } from '../lib/grades'
 import { useStore } from '../lib/store'
 import { useUi } from '../lib/ui'
 import { COURSES, courseStats, dependentsOf, fmtPts, semLabel } from '../lib/catalog'
@@ -10,7 +11,8 @@ import { ReserveCreditsPanel } from './ReserveCredits'
 import { chainHover } from './ChainCard'
 import { isFailed, itemCourseId } from '../lib/types'
 import { CreditsPanel } from './CreditsPanel'
-import { Star } from 'lucide-react'
+import { Layers } from 'lucide-react'
+import { goTab } from './AuditView'
 
 function Ring({ done, plan, total, size = 150 }: { done: number; plan: number; total: number; size?: number }) {
   const r = size / 2 - 12, c = 2 * Math.PI * r
@@ -52,7 +54,7 @@ function Bar({ label, done, plan, hint, cat, credit }: { label: string; done: Bu
 }
 
 export function Requirements() {
-  const { state, dispatch } = useStore()
+  const { state } = useStore()
   const ui = useUi()
   const done = useMemo(() => computeRequirements(state, 'done'), [state])
   const plan = useMemo(() => computeRequirements(state, 'plan'), [state])
@@ -101,15 +103,15 @@ export function Requirements() {
     return { nextSem, openNext, unlockers, warnings }
   }, [state, futureSems])
 
-  const sortedGroups = [...groups.all].sort((a, b) => Number(b.selected) - Number(a.selected) || a.done.group.id - b.done.group.id)
+  const selectedGroups = state.selectedGroups.map((sg) => groups.all.find((x) => x.done.group.id === sg.id)).filter((x): x is (typeof groups.all)[number] => !!x)
 
   return (
     <div className="reqs">
       <section className="hero">
         <Ring done={done.total.have} plan={plan.total.have} total={TRACK.totalPoints} />
         <div className="hero-stats">
-          <div className="hs"><span>ממוצע מצטבר</span><b>{curGpa != null ? curGpa.toFixed(1) : '—'}</b></div>
-          <div className="hs"><span>ממוצע משוער (עם ציונים צפויים)</span><b>{projGpa != null ? projGpa.toFixed(1) : '—'}</b></div>
+          <div className="hs"><span>ממוצע מצטבר</span><b>{curGpa != null ? fmtGpa(curGpa) : '—'}</b></div>
+          <div className="hs"><span>ממוצע משוער (עם ציונים צפויים)</span><b>{projGpa != null ? fmtGpa(projGpa) : '—'}</b></div>
           <div className="hs"><span>נקודות שנספרות לתואר</span><b>{fmtPts(done.total.have)}</b></div>
           <div className="hs"><span>לפי גיליון הציונים</span><b>{fmtPts(activeSheet().accumulated)}</b></div>
           <div className="hs"><span>נותרו</span><b>{fmtPts(remainingPts)}</b></div>
@@ -154,50 +156,30 @@ export function Requirements() {
             הושלמו {groups.completedDone} · בתכנון {groups.completedPlan} מתוך {groups.need} נדרשות
           </span>
         </div>
-        <p className="muted small">סמנו ★ את הקבוצות שבחרתם (לפחות 3; קבוצה כפולה נספרת כשתיים). קורס שמופיע בכמה שרשראות שבחרת נספר רק באחת מהן – אפשר להחליף בלחיצה על נקודת השרשרת בכרטיס הקורס או בלשונית השרשראות.</p>
-        <div className="group-grid">
-          {sortedGroups.map(({ selected, done: gd, plan: gp }) => {
-            const g = gd.group
-            const sel = state.selectedGroups.find((s) => s.id === g.id)
-            return (
-              <div key={g.id} className={`gcard ${selected ? 'mine' : ''} ${gp.complete ? 'complete' : ''}`}>
-                <div className="gc-head">
-                  <button
-                    className={`star-btn ${selected ? 'on' : ''}`}
-                    onClick={() => {
-                      if (!selected && state.selectedGroups.length >= 3) { ui.toast('אפשר לבחור עד 3 שרשראות – הסירו אחת קודם', 'warn'); return }
-                      dispatch({ type: 'toggleGroup', id: g.id })
-                    }}
-                    aria-label="בחירת קבוצה" aria-pressed={selected}
-                  >
-                    <Star size={18} fill={selected ? 'currentColor' : 'none'} />
-                  </button>
-                  <div className="gc-title" tabIndex={selected ? 0 : undefined} {...(selected ? chainHover(g.id) : {})}>{g.id}. {g.name}{sel?.double ? ' – כפולה' : ''}{g.honorsOnly ? ' (מצטיינים)' : ''}</div>
-                  {g.canBeDouble && (
-                    <div className="seg small" aria-label="בודדת או כפולה">
-                      <button className={selected && !sel?.double ? 'on' : ''} onClick={() => dispatch({ type: 'selectChain', id: g.id, double: false })}>בודדת · {g.single.count}</button>
-                      <button className={sel?.double ? 'on' : ''} onClick={() => dispatch({ type: 'selectChain', id: g.id, double: true })}>כפולה · {g.double!.count}</button>
-                    </div>
-                  )}
+        {selectedGroups.length === 0 ? (
+          <p className="muted">עוד לא נבחרו שרשראות. צריך לפחות 3 קבוצות (קבוצה כפולה נספרת כשתיים).</p>
+        ) : (
+          <div className="group-sum">
+            {selectedGroups.map(({ done: gd, plan: gp }) => {
+              const g = gd.group
+              const idx = state.selectedGroups.findIndex((s) => s.id === g.id)
+              const sel = state.selectedGroups[idx]
+              return (
+                <div key={g.id} className={`gs-row c${idx + 1} ${gp.complete ? 'complete' : ''}`} tabIndex={0} {...chainHover(g.id)}>
+                  <span className={`chain-dot c${idx + 1}`}>{idx + 1}</span>
+                  <b className="gs-name">{g.name}{sel?.double ? ' – כפולה' : ''}</b>
+                  <div className="bk-bar thin">
+                    <i className="plan" style={{ width: `${Math.min(100, (gp.count / gp.need) * 100)}%` }} />
+                    <i className="done" style={{ width: `${Math.min(100, (gd.count / gd.need) * 100)}%` }} />
+                  </div>
+                  <span className="gs-count">{gd.count} הושלמו · {gp.count} בתכנון · נדרשים {gp.need}</span>
+                  <span className={`pill ${gp.complete ? 'ok' : ''}`}>{gp.complete ? '✓ התכנון משלים' : 'חסר בתכנון'}</span>
                 </div>
-                <div className="bk-bar thin">
-                  <i className="plan" style={{ width: `${Math.min(100, (gp.count / gp.need) * 100)}%` }} />
-                  <i className="done" style={{ width: `${Math.min(100, (gd.count / gd.need) * 100)}%` }} />
-                </div>
-                <div className="gc-count">{gd.count} הושלמו · {gp.count} בתכנון · נדרשים {gp.need}</div>
-                <ul className="gc-rules">
-                  {gp.rules.map((r, i) => <li key={i} className={r.ok ? 'ok' : ''}>{r.ok ? '✓' : '○'} {r.text}</li>)}
-                </ul>
-                <div className="alt-chips small">
-                  {g.courses.filter((id) => COURSES[id]).map((id) => {
-                    const st = gd.members.includes(id) ? 'done' : gp.members.includes(id) ? 'plan' : 'neutral'
-                    return <button key={id} className={`cchip ${st}`} onClick={() => ui.openCourse(id)}>{COURSES[id].name}</button>
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
+        <button className="btn ghost" onClick={() => goTab('chains')}><Layers size={15} aria-hidden /> {selectedGroups.length ? 'לפירוט, החלפה והשוואה' : 'לבחירת שרשראות'}</button>
       </section>
 
       <section className="panel insights">
